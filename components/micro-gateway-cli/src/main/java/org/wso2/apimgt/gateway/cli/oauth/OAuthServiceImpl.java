@@ -26,6 +26,7 @@ import org.wso2.apimgt.gateway.cli.exception.CLIInternalException;
 import org.wso2.apimgt.gateway.cli.exception.CLIRuntimeException;
 import org.wso2.apimgt.gateway.cli.oauth.builder.DCRRequestBuilder;
 import org.wso2.apimgt.gateway.cli.oauth.builder.OAuthTokenRequestBuilder;
+import org.wso2.apimgt.gateway.cli.utils.GatewayCmdUtils;
 import org.wso2.apimgt.gateway.cli.utils.TokenManagementUtil;
 
 import javax.xml.bind.DatatypeConverter;
@@ -37,6 +38,11 @@ import java.util.Arrays;
 
 public class OAuthServiceImpl implements OAuthService {
     private static final Logger logger = LoggerFactory.getLogger(OAuthServiceImpl.class);
+    private String projectPath;
+    
+    public OAuthServiceImpl(String projectPath) {
+        this.projectPath = projectPath;
+    }
 
     /**
      * @see OAuthService#generateAccessToken(String, String, char[], String, String)
@@ -68,9 +74,11 @@ public class OAuthServiceImpl implements OAuthService {
                 JsonNode rootNode = mapper.readTree(responseStr);
                 return rootNode.path(TokenManagementConstants.ACCESS_TOKEN).asText();
             } else {
+                GatewayCmdUtils.deleteProject(projectPath);
                 throw new CLIInternalException("Error occurred while getting the token. Status code: " + responseCode);
             }
         } catch (IOException e) {
+            GatewayCmdUtils.deleteProject(projectPath);
             String serverUrl = getServerUrl(tokenEndpoint);
             throw new CLIRuntimeException(
                     "Error occurred while trying to connect with server. Is the server running at " + serverUrl + "?",
@@ -123,13 +131,16 @@ public class OAuthServiceImpl implements OAuthService {
                 logger.debug("Successfully received client id:{} from DCR endpoint", clientId);
                 return clientInfo;
             } else if (responseCode == 401) {
+                GatewayCmdUtils.deleteProject(projectPath);
                 throw new CLIRuntimeException(
                         "Invalid user credentials or the user does not have required permissions");
             } else { //If DCR call fails
+		GatewayCmdUtils.deleteProject(projectPath);
                 throw new CLIInternalException(
                         "Error occurred while creating oAuth application Status code: " + responseCode);
             }
         } catch (IOException e) {
+            GatewayCmdUtils.deleteProject(projectPath);
             String serverUrl = getServerUrl(dcrEndpoint);
             throw new CLIRuntimeException(
                     "Error occurred while trying to connect with server. Is the server running at " + serverUrl + "?",

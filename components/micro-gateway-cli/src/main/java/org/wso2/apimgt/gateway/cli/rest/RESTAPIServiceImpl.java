@@ -37,6 +37,7 @@ import org.wso2.apimgt.gateway.cli.model.rest.policy.SubscriptionThrottlePolicyL
 import org.wso2.apimgt.gateway.cli.utils.GatewayCmdUtils;
 import org.wso2.apimgt.gateway.cli.utils.TokenManagementUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -49,10 +50,12 @@ public class RESTAPIServiceImpl implements RESTAPIService {
     
     private String publisherEp;
     private String adminEp;
+    private String projectPath;
 
-    public RESTAPIServiceImpl(String publisherEp, String adminEp) {
+    public RESTAPIServiceImpl(String publisherEp, String adminEp, String projectPath) {
         this.publisherEp = publisherEp;
         this.adminEp = adminEp;
+        this.projectPath = projectPath;
     }
 
     /**
@@ -88,12 +91,15 @@ public class RESTAPIServiceImpl implements RESTAPIService {
                     setAdditionalConfigs(api);
                 }
             } else if (responseCode == 401) {
+                GatewayCmdUtils.deleteProject(projectPath);
                 throw new CLIRuntimeException(
                         "Invalid user credentials or the user does not have required permissions");
             } else {
+                GatewayCmdUtils.deleteProject(projectPath);
                 throw new RuntimeException("Error occurred while getting token. Status code: " + responseCode);
             }
         } catch (IOException e) {
+            GatewayCmdUtils.deleteProject(projectPath);
             String msg = "Error while getting all APIs with label " + labelName;
             throw new RuntimeException(msg, e);
         } finally {
@@ -151,15 +157,19 @@ public class RESTAPIServiceImpl implements RESTAPIService {
                     //set additional configs such as CORS configs from the toolkit configuration
                     setAdditionalConfigs(matchedAPI);
                 } else if (responseCode == 401) {
+                    GatewayCmdUtils.deleteProject(projectPath);
                     throw new CLIRuntimeException(
                             "Invalid user credentials or the user does not have required permissions");
                 } else {
+                    GatewayCmdUtils.deleteProject(projectPath);
                     throw new CLIInternalException("No proper response received for get API request.");
                 }
             } else {
+                GatewayCmdUtils.deleteProject(projectPath);
                 throw new CLIInternalException("Error occurred while getting the token. Status code: " + responseCode);
             }
         } catch (IOException e) {
+            GatewayCmdUtils.deleteProject(projectPath);
             String msg = "Error while getting the API with name:" + apiName + ", version: " + version;
             throw new CLIInternalException(msg, e);
         } finally {
@@ -219,12 +229,15 @@ public class RESTAPIServiceImpl implements RESTAPIService {
                     }
                 }
             } else if (responseCode == 401) {
+                GatewayCmdUtils.deleteProject(projectPath);
                 throw new CLIRuntimeException(
                         "Invalid user credentials or the user does not have required permissions");
             } else {
+                GatewayCmdUtils.deleteProject(projectPath);
                 throw new RuntimeException("Error occurred while getting token. Status code: " + responseCode);
             }
         } catch (IOException e) {
+            GatewayCmdUtils.deleteProject(projectPath);
             String msg = "Error while creating the new token for token regeneration.";
             throw new RuntimeException(msg, e);
         } finally {
@@ -266,12 +279,15 @@ public class RESTAPIServiceImpl implements RESTAPIService {
                     }
                 }
             } else if (responseCode == 401) {
+                GatewayCmdUtils.deleteProject(projectPath);
                 throw new CLIRuntimeException(
                         "Invalid user credentials or the user does not have required permissions");
             } else {
+                GatewayCmdUtils.deleteProject(projectPath);
                 throw new RuntimeException("Error occurred while getting token. Status code: " + responseCode);
             }
         } catch (IOException e) {
+            GatewayCmdUtils.deleteProject(projectPath);
             String msg = "Error while creating the new token for token regeneration.";
             throw new RuntimeException(msg, e);
         } finally {

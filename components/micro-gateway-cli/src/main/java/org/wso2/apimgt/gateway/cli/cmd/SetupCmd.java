@@ -121,6 +121,7 @@ public class SetupCmd implements GatewayLauncherCmd {
     private String registrationEndpoint;
     private String tokenEndpoint;
     private String clientSecret;
+    private String projectPath;
 
     public void execute() {
         String clientID;
@@ -138,6 +139,7 @@ public class SetupCmd implements GatewayLauncherCmd {
                     + "` already exist. use -f or --force to forcefully update the project directory.");
         }
         init(projectName, toolkitConfigPath, deploymentConfigPath);
+        projectPath = workspace + File.separator + projectName;
 
         Config config = GatewayCmdUtils.getConfig();
         boolean isOverwriteRequired = false;
@@ -232,6 +234,7 @@ public class SetupCmd implements GatewayLauncherCmd {
         }
         trustStoreFile = new File(trustStoreLocation);
         if (!trustStoreFile.exists()) {
+            GatewayCmdUtils.deleteProject(projectPath);
             logger.error("Provided trust store location {} does not exist.", trustStoreLocation);
             throw new CLIRuntimeException("Provided trust store location does not exist.");
         }
@@ -241,7 +244,7 @@ public class SetupCmd implements GatewayLauncherCmd {
         System.setProperty("javax.net.ssl.trustStore", trustStoreLocation);
         System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
 
-        OAuthService manager = new OAuthServiceImpl();
+        OAuthService manager = new OAuthServiceImpl(projectPath);
         clientID = config.getToken().getClientId();
         String encryptedSecret = config.getToken().getClientSecret();
         if (!StringUtils.isEmpty(clientID.trim()) && !StringUtils.isEmpty(encryptedSecret.trim())) {
@@ -264,7 +267,7 @@ public class SetupCmd implements GatewayLauncherCmd {
                 .generateAccessToken(tokenEndpoint, username, password.toCharArray(), clientID, clientSecret);
 
         List<ExtendedAPI> apis = new ArrayList<>();
-        RESTAPIService service = new RESTAPIServiceImpl(publisherEndpoint, adminEndpoint);
+        RESTAPIService service = new RESTAPIServiceImpl(publisherEndpoint, adminEndpoint, projectPath);
         if (label != null) {
             apis = service.getAPIs(label, accessToken);
         } else {
@@ -275,7 +278,7 @@ public class SetupCmd implements GatewayLauncherCmd {
         }
         if (apis == null || (apis != null && apis.isEmpty())) {
             // Delete folder
-            GatewayCmdUtils.deleteProject(workspace + File.separator + projectName);
+            GatewayCmdUtils.deleteProject(projectPath);
             String errorMsg;
             if (label != null) {
                 errorMsg = "No APIs found for the given label: " + label;
@@ -305,6 +308,7 @@ public class SetupCmd implements GatewayLauncherCmd {
                         "Error while checking for changes of resources. Skipping no-change detection..");
             }
         } catch (IOException | BallerinaServiceGenException e) {
+            GatewayCmdUtils.deleteProject(projectPath);
             logger.error("Error while generating ballerina source.");
             throw new CLIInternalException("Error while generating ballerina source.");
         }
